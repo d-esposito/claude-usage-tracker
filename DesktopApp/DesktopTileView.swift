@@ -69,7 +69,7 @@ private struct DesktopGauge: View {
     @State private var isHovered = false
 
     var body: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: 12) {
             ZStack {
                 Circle()
                     .stroke(.primary.opacity(0.14), lineWidth: 9)
