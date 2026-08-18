@@ -13,7 +13,7 @@ let package = Package(
             name: "ClaudeUsageTrackerDesktop",
             path: ".",
             exclude: [
-                "DesktopTests", "README.md", "scripts", "DesktopApp/Info.plist"
+                "assets", "DesktopTests", "README.md", "scripts", "DesktopApp/Info.plist"
             ],
             sources: ["DesktopApp", "Shared/UsageModels.swift"]
         ),

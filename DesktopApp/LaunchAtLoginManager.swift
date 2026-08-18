@@ -13,14 +13,22 @@ enum LaunchAtLoginError: LocalizedError {
 }
 
 struct LaunchAtLoginManager {
-    static let label = "local.davidesposito.ClaudeUsageTrackerDesktop"
+    static let label = "io.github.d-esposito.ClaudeUsageTrackerDesktop"
+    private static let legacyLabels = ["local.davidesposito.ClaudeUsageTrackerDesktop"]
 
     private var agentURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/LaunchAgents/\(Self.label).plist")
+        agentURL(for: Self.label)
     }
 
-    var isEnabled: Bool { FileManager.default.fileExists(atPath: agentURL.path) }
+    private var legacyAgentURLs: [URL] {
+        Self.legacyLabels.map(agentURL(for:))
+    }
+
+    var isEnabled: Bool {
+        ([agentURL] + legacyAgentURLs).contains {
+            FileManager.default.fileExists(atPath: $0.path)
+        }
+    }
 
     func setEnabled(_ enabled: Bool) throws {
         let domain = "gui/\(getuid())"
@@ -35,6 +43,7 @@ struct LaunchAtLoginManager {
             ]
             let data = try PropertyListSerialization.data(fromPropertyList: propertyList, format: .xml, options: 0)
             try data.write(to: agentURL, options: .atomic)
+            removeLegacyAgents(from: domain)
             _ = runLaunchctl(["bootout", domain, agentURL.path])
             guard runLaunchctl(["bootstrap", domain, agentURL.path]) == 0 else {
                 throw LaunchAtLoginError.launchctlFailed
@@ -42,6 +51,19 @@ struct LaunchAtLoginManager {
         } else {
             _ = runLaunchctl(["bootout", domain, agentURL.path])
             try? FileManager.default.removeItem(at: agentURL)
+            removeLegacyAgents(from: domain)
+        }
+    }
+
+    private func agentURL(for label: String) -> URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/LaunchAgents/\(label).plist")
+    }
+
+    private func removeLegacyAgents(from domain: String) {
+        for url in legacyAgentURLs {
+            _ = runLaunchctl(["bootout", domain, url.path])
+            try? FileManager.default.removeItem(at: url)
         }
     }
 
